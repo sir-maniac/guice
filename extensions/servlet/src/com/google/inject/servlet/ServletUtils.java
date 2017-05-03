@@ -57,12 +57,31 @@ final class ServletUtils {
     if (request != null) {
       String contextPath = request.getContextPath();
       String requestURI = request.getRequestURI();
+      requestURI = removePathParam(requestURI);
       if (contextPath.length() < requestURI.length()) {
         String suffix = requestURI.substring(contextPath.length());
         return normalizePath(suffix);
       } else if (requestURI.trim().length() > 0 &&
           contextPath.length() == requestURI.length()) {
         return "/";
+      }
+    }
+    return null;
+  }
+
+  static String removePathParam(String requestURI) {
+    if (requestURI != null) {
+      int semicolon = requestURI.indexOf(';');
+      if (semicolon != -1) {
+        StringBuilder sb = new StringBuilder(requestURI.substring(0, semicolon));
+        int queryStart = requestURI.indexOf('?');
+        if (queryStart != -1) {
+          sb.append(requestURI.substring(queryStart));
+        }
+        return sb.toString();
+      }
+      else {
+        return requestURI;
       }
     }
     return null;

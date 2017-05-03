@@ -245,6 +245,13 @@ public class ServletDefinitionPathsTest extends TestCase {
     pathInfoWithRegexMatching("/path/index%2B.html", "/path", "/(.)*", "/index+.html", "");
     pathInfoWithRegexMatching("/path/a%20file%20with%20spaces%20in%20name.html", "/path", "/(.)*", "/a file with spaces in name.html", "");
     pathInfoWithRegexMatching("/path/Tam%C3%A1s%20nem%20m%C3%A1s.html", "/path", "/(.)*", "/Tamás nem más.html", "");
+    
+    // jsessionid paths
+    pathInfoWithRegexMatching("/path/thing/stuff;jsessionid=12345678910", "/path", "/thing/(.)*", "/stuff", "/thing");
+    pathInfoWithRegexMatching("/path/thing/stuff.html;jsessionid=12345678910", "/path", "/thing/(.)*", "/stuff.html",
+        "/thing");
+    pathInfoWithRegexMatching("/path/thing;jsessionid=12345678910", "/path", "/thing/(.)*", null, "/thing");
+    pathInfoWithRegexMatching("/path/my/h.thing;jsessionid=12345678910", "/path", ".*\\.thing", null, "/my/h.thing");
   }
 
   public final void pathInfoWithRegexMatching(final String requestUri, final String contextPath,
