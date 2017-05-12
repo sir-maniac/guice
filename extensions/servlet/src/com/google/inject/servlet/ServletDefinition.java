@@ -15,8 +15,6 @@
  */
 package com.google.inject.servlet;
 
-import static com.google.inject.servlet.ManagedServletPipeline.REQUEST_DISPATCHER_REQUEST;
-
 import com.google.common.collect.Iterators;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -52,6 +50,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author dhanji@gmail.com (Dhanji R. Prasanna)
  */
 class ServletDefinition implements ProviderWithExtensionVisitor<ServletDefinition> {
+
   private final Key<? extends HttpServlet> servletKey;
   private final UriPatternMatcher patternMatcher;
   private final Map<String, String> initParams;
@@ -159,6 +158,18 @@ class ServletDefinition implements ProviderWithExtensionVisitor<ServletDefinitio
   }
 
   /**
+   * @param pattern The Path that this service pattern can match against.
+   * @return Returns a canonical servlet path from this pattern. For instance, if the pattern is
+   *         {@code /home/*} then the path extracted will be {@code /home}. Each pattern matcher
+   *         implementation must decide and publish what a canonical path represents.
+   *
+   *         NOTE(dhanji): This method returns null for the regex pattern matcher.
+   */
+  public String extractPath(String path) {
+    return patternMatcher.extractPath(path);
+  }
+
+  /**
    * Wrapper around the service chain to ensure a servlet is servicing what it must and provides it
    * with a wrapped request.
    *
@@ -178,106 +189,14 @@ class ServletDefinition implements ProviderWithExtensionVisitor<ServletDefinitio
 
     //invocations of the chain end at the first matched servlet
     if (serve) {
-      doService(servletRequest, servletResponse);
+      doService((HttpServletRequest)servletRequest, (HttpServletResponse)servletResponse);
     }
 
     //return false if no servlet matched (so we can proceed down to the web.xml servlets)
     return serve;
   }
 
-  /**
-   * Utility that delegates to the actual service method of the servlet wrapped with a contextual
-   * request (i.e. with correctly computed path info).
-   *
-   * We need to suppress deprecation coz we use HttpServletRequestWrapper, which implements
-   * deprecated API for backwards compatibility.
-   */
-  void doService(final ServletRequest servletRequest, ServletResponse servletResponse)
-      throws ServletException, IOException {
-
-    HttpServletRequest request = new HttpServletRequestWrapper(
-        (HttpServletRequest) servletRequest) {
-      private boolean pathComputed;
-      private String path;
-
-      private boolean pathInfoComputed;
-      private String pathInfo;
-
-      @Override
-      public String getPathInfo() {
-        if (!isPathInfoComputed()) {
-          String servletPath = getServletPath();
-          int servletPathLength = servletPath.length();
-          String requestUri = ServletUtils.removePathParam(getRequestURI());
-          pathInfo = requestUri.substring(getContextPath().length()).replaceAll("[/]{2,}", "/");
-          // See: https://github.com/google/guice/issues/372
-          if (pathInfo.startsWith(servletPath)) {
-            pathInfo = pathInfo.substring(servletPathLength);
-
-            // Corner case: when servlet path & request path match exactly (without trailing '/'),
-            // then pathinfo is null.
-            if (pathInfo.isEmpty() && servletPathLength > 0) {
-              pathInfo = null;
-            } else {
-              try {
-                pathInfo = new URI(pathInfo).getPath();
-              } catch (URISyntaxException e) {
-                // ugh, just leave it alone then
-              }
-            }
-          } else {
-            pathInfo = null; // we know nothing additional about the URI.
-          }
-          pathInfoComputed = true;
-        }
-
-        return pathInfo;
-      }
-
-      // NOTE(dhanji): These two are a bit of a hack to help ensure that request dispatcher-sent
-      // requests don't use the same path info that was memoized for the original request.
-      // NOTE(iqshum): I don't think this is possible, since the dispatcher-sent request would
-      // perform its own wrapping.
-      private boolean isPathInfoComputed() {
-        return pathInfoComputed && servletRequest.getAttribute(REQUEST_DISPATCHER_REQUEST) == null;
-      }
-
-      private boolean isPathComputed() {
-        return pathComputed && servletRequest.getAttribute(REQUEST_DISPATCHER_REQUEST) == null;
-      }
-
-      @Override
-      public String getServletPath() {
-        return computePath();
-      }
-
-      @Override
-      public String getPathTranslated() {
-        final String info = getPathInfo();
-
-        return (null == info) ? null : getRealPath(info);
-      }
-
-      // Memoizer pattern.
-      private String computePath() {
-        if (!isPathComputed()) {
-          String servletPath = super.getServletPath();
-          path = patternMatcher.extractPath(servletPath);
-          pathComputed = true;
-
-          if (null == path) {
-            path = servletPath;
-          }
-        }
-
-        return path;
-      }
-    };
-
-    doServiceImpl(request, (HttpServletResponse) servletResponse);
-  }
-
-  private void doServiceImpl(HttpServletRequest request, HttpServletResponse response)
+   void doService(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     GuiceFilter.Context previous = GuiceFilter.localContext.get();
     HttpServletRequest originalRequest

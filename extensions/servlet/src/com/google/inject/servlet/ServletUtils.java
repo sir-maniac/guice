@@ -55,18 +55,22 @@ final class ServletUtils {
       // @Nullable
       final HttpServletRequest request) {
     if (request != null) {
-      String contextPath = request.getContextPath();
-      String requestURI = request.getRequestURI();
-      requestURI = removePathParam(requestURI);
-      if (contextPath.length() < requestURI.length()) {
-        String suffix = requestURI.substring(contextPath.length());
-        return normalizePath(suffix);
-      } else if (requestURI.trim().length() > 0 &&
-          contextPath.length() == requestURI.length()) {
-        return "/";
-      }
+      return getContextRelativePath(request.getContextPath(), request.getRequestURI());
     }
     return null;
+  }
+
+  static String getContextRelativePath(String contextPath, String requestURI) {
+    requestURI = removePathParam(requestURI);
+    if (contextPath.length() < requestURI.length()) {
+      String suffix = requestURI.substring(contextPath.length());
+      return normalizePath(suffix);
+    } else if (requestURI.trim().length() > 0 &&
+        contextPath.length() == requestURI.length()) {
+      return "/";
+    } else {
+      return null;
+    }
   }
 
   static String removePathParam(String requestURI) {

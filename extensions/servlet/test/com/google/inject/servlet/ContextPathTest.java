@@ -16,9 +16,6 @@
 
 package com.google.inject.servlet;
 
-import static org.easymock.EasyMock.createControl;
-import static org.easymock.EasyMock.expect;
-
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -31,7 +28,10 @@ import junit.framework.TestCase;
 
 import org.easymock.IMocksControl;
 
+import static org.easymock.EasyMock.*;
+
 import java.io.IOException;
+import java.util.Collections;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -117,7 +117,14 @@ public class ContextPathTest extends TestCase {
     HttpServletRequest req = testControl.createMock(HttpServletRequest.class);
     HttpServletResponse res = testControl.createMock(HttpServletResponse.class);
 
+    req.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    req.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
+
+    expect(req.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
     expect(req.getMethod()).andReturn("GET").anyTimes();
+    expect(req.getPathInfo()).andReturn(null).anyTimes();
     expect(req.getRequestURI()).andReturn("/bar/foo").anyTimes();
     expect(req.getServletPath()).andReturn("/bar/foo").anyTimes();
     expect(req.getContextPath()).andReturn("").anyTimes();
@@ -158,61 +165,61 @@ public class ContextPathTest extends TestCase {
   // ROOT Web app, using Tomcat default servlet
   public void testRootDefault() throws Exception {
     // fetching /. Should go up the filter chain (only mappings on /foo/* and /bar/*).
-    runTest("/", "/", "", true, false, false);
+    runTest("/", "/", null, "", true, false, false);
     // fetching /bar/. Should hit the bar servlet
-    runTest("/bar/", "/bar/", "", false, false, true);
+    runTest("/bar/", "/bar/", null, "", false, false, true);
     // fetching /foo/xxx. Should hit the foo servlet
-    runTest("/foo/xxx", "/foo/xxx", "", false, true, false);
+    runTest("/foo/xxx", "/foo/xxx", null, "", false, true, false);
     // fetching /xxx. Should go up the chain
-    runTest("/xxx", "/xxx", "", true, false, false);
+    runTest("/xxx", "/xxx", null, "", true, false, false);
   }
 
   // ROOT Web app, using explicit backing servlet mounted at /*
   public void testRootExplicit() throws Exception {
     // fetching /. Should go up the filter chain (only mappings on /foo/* and /bar/*).
-    runTest("/", "", "", true, false, false);
+    runTest("/", "", null, "", true, false, false);
     // fetching /bar/. Should hit the bar servlet
-    runTest("/bar/", "", "", false, false, true);
+    runTest("/bar/", "", null, "", false, false, true);
     // fetching /foo/xxx. Should hit the foo servlet
-    runTest("/foo/xxx", "", "", false, true, false);
+    runTest("/foo/xxx", "", null, "", false, true, false);
     // fetching /xxx. Should go up the chain
-    runTest("/xxx", "", "", true, false, false);
+    runTest("/xxx", "", null, "", true, false, false);
   }
 
   // ROOT Web app, using two backing servlets, mounted at /bar/* and /foo/*
   public void testRootSpecific() throws Exception {
     // fetching /. Should go up the filter chain (only mappings on /foo/* and /bar/*).
-    runTest("/", "/", "", true, false, false);
+    runTest("/", "/", null, "", true, false, false);
     // fetching /bar/. Should hit the bar servlet
-    runTest("/bar/", "/bar", "", false, false, true);
+    runTest("/bar/", "/bar", null, "", false, false, true);
     // fetching /foo/xxx. Should hit the foo servlet
-    runTest("/foo/xxx", "/foo", "", false, true, false);
+    runTest("/foo/xxx", "/foo", "/xxx", "", false, true, false);
     // fetching /xxx. Should go up the chain
-    runTest("/xxx", "/xxx", "", true, false, false);
+    runTest("/xxx", "/xxx", null, "", true, false, false);
   }
 
   // Web app located at /webtest, using Tomcat default servlet
   public void testWebtestDefault() throws Exception {
     // fetching /. Should go up the filter chain (only mappings on /foo/* and /bar/*).
-    runTest("/webtest/", "/", "/webtest", true, false, false);
+    runTest("/webtest/", "/", null, "/webtest", true, false, false);
     // fetching /bar/. Should hit the bar servlet
-    runTest("/webtest/bar/", "/bar/", "/webtest", false, false, true);
+    runTest("/webtest/bar/", "/bar/", null, "/webtest", false, false, true);
     // fetching /foo/xxx. Should hit the foo servlet
-    runTest("/webtest/foo/xxx", "/foo/xxx", "/webtest", false, true, false);
+    runTest("/webtest/foo/xxx", "/foo/xxx", null, "/webtest", false, true, false);
     // fetching /xxx. Should go up the chain
-    runTest("/webtest/xxx", "/xxx", "/webtest", true, false, false);
+    runTest("/webtest/xxx", "/xxx", null, "/webtest", true, false, false);
   }
 
   // Web app located at /webtest, using explicit backing servlet mounted at /*
   public void testWebtestExplicit() throws Exception {
     // fetching /. Should go up the filter chain (only mappings on /foo/* and /bar/*).
-    runTest("/webtest/", "", "/webtest", true, false, false);
+    runTest("/webtest/", "", null, "/webtest", true, false, false);
     // fetching /bar/. Should hit the bar servlet
-    runTest("/webtest/bar/", "", "/webtest", false, false, true);
+    runTest("/webtest/bar/", "", null, "/webtest", false, false, true);
     // fetching /foo/xxx. Should hit the foo servlet
-    runTest("/webtest/foo/xxx", "", "/webtest", false, true, false);
+    runTest("/webtest/foo/xxx", "", "/xxx", "/webtest", false, true, false);
     // fetching /xxx. Should go up the chain
-    runTest("/webtest/xxx", "", "/webtest", true, false, false);
+    runTest("/webtest/xxx", "", null, "/webtest", true, false, false);
   }
 
   // Web app located at /webtest, using two backing servlets, mounted at /bar/*
@@ -220,17 +227,17 @@ public class ContextPathTest extends TestCase {
   public void testWebtestSpecific() throws Exception {
     // fetching /. Should go up the filter chain (only mappings on /foo/* and
     // /bar/*).
-    runTest("/webtest/", "/", "/webtest", true, false, false);
+    runTest("/webtest/", "/", null, "/webtest", true, false, false);
     // fetching /bar/. Should hit the bar servlet
-    runTest("/webtest/bar/", "/bar", "/webtest", false, false, true);
+    runTest("/webtest/bar/", "/bar", "/", "/webtest", false, false, true);
     // fetching /foo/xxx. Should hit the foo servlet
-    runTest("/webtest/foo/xxx", "/foo", "/webtest", false, true, false);
+    runTest("/webtest/foo/xxx", "/foo", "/xxx", "/webtest", false, true, false);
     // fetching /xxx. Should go up the chain
-    runTest("/webtest/xxx", "/xxx", "/webtest", true, false, false);
+    runTest("/webtest/xxx", "/xxx", null, "/webtest", true, false, false);
   }
 
-  private void runTest(final String requestURI, final String servletPath, final String contextPath,
-      final boolean filterResult, final boolean fooResult, final boolean barResult)
+  private void runTest(final String requestURI, final String servletPath, String pathInfo,
+      final String contextPath, final boolean filterResult, final boolean fooResult, final boolean barResult)
       throws Exception {
     IMocksControl testControl = createControl();
 
@@ -241,7 +248,14 @@ public class ContextPathTest extends TestCase {
     HttpServletRequest req = testControl.createMock(HttpServletRequest.class);
     HttpServletResponse res = testControl.createMock(HttpServletResponse.class);
 
+    req.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    req.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
+
+    expect(req.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
     expect(req.getMethod()).andReturn("GET").anyTimes();
+    expect(req.getPathInfo()).andReturn(pathInfo).anyTimes();
     expect(req.getRequestURI()).andReturn(requestURI).anyTimes();
     expect(req.getServletPath()).andReturn(servletPath).anyTimes();
     expect(req.getContextPath()).andReturn(contextPath).anyTimes();

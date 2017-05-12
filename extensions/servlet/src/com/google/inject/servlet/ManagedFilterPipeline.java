@@ -37,6 +37,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpSession;
 
 /**
  * Central routing/dispatch class handles lifecycle of managed filters, and delegates to the servlet
@@ -55,6 +56,7 @@ class ManagedFilterPipeline implements FilterPipeline{
 
   //Guards a DCL, so needs to be volatile
   private volatile boolean initialized = false;
+  private ServletContext contextWrapper;
   private static final TypeLiteral<FilterDefinition> FILTER_DEFS =
       TypeLiteral.get(FilterDefinition.class);
 
@@ -95,12 +97,17 @@ class ManagedFilterPipeline implements FilterPipeline{
     // Used to prevent duplicate initialization.
     Set<Filter> initializedSoFar = Sets.newIdentityHashSet();
 
+    // wrap the servletContext so forwards and includes work
+    //  when calling ServletContext#getRequestDispatcher
+    contextWrapper = withDispatcher(servletContext, servletPipeline);
+
+
     for (FilterDefinition filterDefinition : filterDefinitions) {
-      filterDefinition.init(servletContext, injector, initializedSoFar);
+      filterDefinition.init(contextWrapper, injector, initializedSoFar);
     }
 
     //next, initialize servlets...
-    servletPipeline.init(servletContext, injector);
+    servletPipeline.init(contextWrapper, injector);
 
     //everything was ok...
     initialized = true;
@@ -132,6 +139,38 @@ class ManagedFilterPipeline implements FilterPipeline{
    * This is not a problem cuz we intend for people to migrate from web.xml to guice-servlet,
    * incrementally, but not the other way around (which, we should actively discourage).
    */
+    private ServletContext withDispatcher(ServletContext servletContext,
+      final ManagedServletPipeline servletPipeline) {
+
+    // don't wrap the request if there are no servlets mapped. This prevents us from inserting our
+    // wrapper unless it's actually going to be used. This is necessary for compatibility for apps
+    // that downcast their HttpServletRequests to a concrete implementation.
+    if (!servletPipeline.hasServletsMapped()) {
+      return servletContext;
+    }
+
+    return new ServletContextWrapper(servletContext) {
+
+      @Override
+      public RequestDispatcher getRequestDispatcher(String path) {
+        final RequestDispatcher dispatcher = servletPipeline.getRequestDispatcher(path);
+
+        return (null != dispatcher) ? dispatcher : super.getRequestDispatcher(path);
+      }
+    };
+  }
+
+  /**
+   * Used to create an proxy that dispatches either to the guice-servlet pipeline or the regular
+   * pipeline based on uri-path match. This proxy also provides minimal forwarding support.
+   *
+   * We cannot forward from a web.xml Servlet/JSP to a guice-servlet (because the filter pipeline
+   * is not called again). However, we can wrap requests with our own dispatcher to forward the
+   * *other* way. web.xml Servlets/JSPs can forward to themselves as per normal.
+   *
+   * This is not a problem cuz we intend for people to migrate from web.xml to guice-servlet,
+   * incrementally, but not the other way around (which, we should actively discourage).
+   */
   @SuppressWarnings({ "JavaDoc", "deprecation" })
   private ServletRequest withDispatcher(ServletRequest servletRequest,
       final ManagedServletPipeline servletPipeline) {
@@ -146,6 +185,39 @@ class ManagedFilterPipeline implements FilterPipeline{
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     //noinspection OverlyComplexAnonymousInnerClass
     return new HttpServletRequestWrapper(request) {
+
+      private HttpSession wrapper;
+
+      /**
+       * Force return of the wrapped servletContext, to ensure calls to
+       *  ServletContext#getRequestDispatcher() can access guice-managed
+       *  filters/servlets
+       *
+       * @see javax.servlet.http.HttpServletRequestWrapper#getSession(boolean)
+       */
+      @Override
+      public HttpSession getSession(boolean create) {
+        if (wrapper == null)
+        {
+          HttpSession innerSession = super.getSession(create);
+          if (innerSession == null) {
+            return null;
+          }
+
+          wrapper = new HttpSessionWrapper(super.getSession(create)) {
+            public ServletContext getServletContext() {
+              return contextWrapper;
+            }
+          };
+        }
+
+        return wrapper;
+      }
+
+      @Override
+      public HttpSession getSession() {
+        return getSession(true);
+      }
 
       @Override
       public RequestDispatcher getRequestDispatcher(String path) {

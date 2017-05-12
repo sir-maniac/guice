@@ -19,6 +19,7 @@ package com.google.inject.servlet;
 import javax.servlet.http.Cookie;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 
@@ -34,6 +35,7 @@ import com.google.inject.Singleton;
 import junit.framework.TestCase;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
@@ -124,11 +126,18 @@ public class ContinuingRequestIntegrationTest extends TestCase {
 
     HttpServletRequest request = createMock(HttpServletRequest.class);
 
-    expect(request.getRequestURI()).andReturn("/");
-    expect(request.getContextPath())
-        .andReturn("")
-        .anyTimes();
-    expect(request.getMethod()).andReturn("GET");
+    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(request.getMethod()).andReturn("GET").anyTimes();
+    expect(request.getPathInfo()).andReturn(null).anyTimes();
+    expect(request.getRequestURI()).andReturn("/").anyTimes();
+    expect(request.getServletPath()).andReturn("").anyTimes();
+    expect(request.getContextPath()).andReturn("").anyTimes();
+
+    request.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    request.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
+
     expect(request.getCookies()).andReturn(new Cookie[0]);
 
     FilterChain filterChain = createMock(FilterChain.class);
@@ -167,12 +176,18 @@ public class ContinuingRequestIntegrationTest extends TestCase {
 
     HttpServletRequest request = createMock(HttpServletRequest.class);
 
-    expect(request.getRequestURI()).andReturn("/");
-    expect(request.getContextPath())
-        .andReturn("")
-        .anyTimes();
+    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(request.getMethod()).andReturn("GET").anyTimes();
+    expect(request.getPathInfo()).andReturn(null).anyTimes();
+    expect(request.getRequestURI()).andReturn("/").anyTimes();
+    expect(request.getServletPath()).andReturn("").anyTimes();
+    expect(request.getContextPath()).andReturn("").anyTimes();
 
-    expect(request.getMethod()).andReturn("GET");
+    request.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    request.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
+
     expect(request.getCookies()).andReturn(new Cookie[0]);
     FilterChain filterChain = createMock(FilterChain.class);
 

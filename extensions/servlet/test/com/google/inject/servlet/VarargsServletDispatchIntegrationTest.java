@@ -18,6 +18,7 @@ package com.google.inject.servlet;
 
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 
@@ -29,6 +30,7 @@ import com.google.inject.Singleton;
 import junit.framework.TestCase;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -79,12 +81,17 @@ public class VarargsServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getRequestURI())
-        .andReturn("/index.html")
-        .times(1);
-    expect(requestMock.getContextPath())
-        .andReturn("")
-        .anyTimes();
+    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(requestMock.getMethod()).andReturn("GET").anyTimes();
+    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
+    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getContextPath()).andReturn("").anyTimes();
+
+    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
 
     //dispatch request
     replay(requestMock);
@@ -119,12 +126,17 @@ public class VarargsServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getRequestURI())
-        .andReturn("/index.html")
-        .times(3);
-    expect(requestMock.getContextPath())
-        .andReturn("")
-        .anyTimes();
+    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(requestMock.getMethod()).andReturn("GET").anyTimes();
+    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
+    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getContextPath()).andReturn("").anyTimes();
+
+    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
 
     //dispatch request
     replay(requestMock);
@@ -162,12 +174,17 @@ public class VarargsServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getRequestURI())
-        .andReturn("/index.html")
-        .times(2);
-    expect(requestMock.getContextPath())
-        .andReturn("")
-        .anyTimes();
+    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(requestMock.getMethod()).andReturn("GET").anyTimes();
+    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
+    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getContextPath()).andReturn("").anyTimes();
+
+    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
 
     //dispatch request
     replay(requestMock);

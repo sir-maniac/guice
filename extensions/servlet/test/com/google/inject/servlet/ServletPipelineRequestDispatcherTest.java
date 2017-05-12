@@ -16,7 +16,6 @@
 
 package com.google.inject.servlet;
 
-import static com.google.inject.servlet.ManagedServletPipeline.REQUEST_DISPATCHER_REQUEST;
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.eq;
@@ -32,6 +31,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import com.google.inject.servlet.ManagedServletPipeline.RequestPaths;
 import com.google.inject.spi.BindingScopingVisitor;
 import com.google.inject.util.Providers;
 
@@ -39,6 +39,7 @@ import junit.framework.TestCase;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +64,7 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
       + new Date() + UUID.randomUUID();
 
   public final void testIncludeManagedServlet() throws IOException, ServletException {
-    String pattern = "blah.html";
+    String pattern = "/blah.html";
     final ServletDefinition servletDefinition =
         new ServletDefinition(
             Key.get(HttpServlet.class),
@@ -78,9 +79,7 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
     expect(requestMock.getAttribute(A_KEY))
         .andReturn(A_VALUE);
 
-
-    requestMock.setAttribute(REQUEST_DISPATCHER_REQUEST, true);
-    requestMock.removeAttribute(REQUEST_DISPATCHER_REQUEST);
+    expectRequest(requestMock, pattern, "http", 80);
 
     final boolean[] run = new boolean[1];
     final HttpServlet mockServlet = new HttpServlet() {
@@ -129,7 +128,7 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
   }
 
   public final void testForwardToManagedServlet() throws IOException, ServletException {
-    String pattern = "blah.html";
+    String pattern = "/blah.html";
     final ServletDefinition servletDefinition =
         new ServletDefinition(
             Key.get(HttpServlet.class),
@@ -145,9 +144,7 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
     expect(requestMock.getAttribute(A_KEY))
         .andReturn(A_VALUE);
 
-
-    requestMock.setAttribute(REQUEST_DISPATCHER_REQUEST, true);
-    requestMock.removeAttribute(REQUEST_DISPATCHER_REQUEST);
+    expectRequest(requestMock, pattern, "http", 80);
 
     expect(mockResponse.isCommitted())
         .andReturn(false);
@@ -195,7 +192,7 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
     assertNotNull(dispatcher);
     dispatcher.forward(requestMock, mockResponse);
 
-    assertTrue("Include did not dispatch to our servlet!", paths.contains(pattern));
+    assertTrue("Include did not dispatch to our servlet!", paths.contains(requestMock.getContextPath() + pattern));
 
     verify(injector, requestMock, mockResponse, mockBinding);
   }
@@ -279,46 +276,63 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
 
   public final void testWrappedRequestUriAndUrlConsistency() {
     final HttpServletRequest mockRequest = createMock(HttpServletRequest.class);
-    expect(mockRequest.getScheme()).andReturn("http");
-    expect(mockRequest.getServerName()).andReturn("the.server");
-    expect(mockRequest.getServerPort()).andReturn(12345);
+
+    expectRequest(mockRequest, "/old-uri", "http", 12345);
+
     replay(mockRequest);
-    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapRequest(mockRequest, "/new-uri");
-    assertEquals("/new-uri", wrappedRequest.getRequestURI());
-    assertEquals("http://the.server:12345/new-uri", wrappedRequest.getRequestURL().toString());
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(mockRequest,
+        new RequestPaths("/app/new-uri", "/app/new-uri", null), true);
+    assertEquals("/app/new-uri", wrappedRequest.getRequestURI());
+    assertEquals("http://the.server:12345/app/new-uri", wrappedRequest.getRequestURL().toString());
   }
 
   public final void testWrappedRequestUrlNegativePort() {
     final HttpServletRequest mockRequest = createMock(HttpServletRequest.class);
-    expect(mockRequest.getScheme()).andReturn("http");
-    expect(mockRequest.getServerName()).andReturn("the.server");
-    expect(mockRequest.getServerPort()).andReturn(-1);
+
+    expectRequest(mockRequest, "/old-uri", "http", -1);
+
     replay(mockRequest);
-    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapRequest(mockRequest, "/new-uri");
-    assertEquals("/new-uri", wrappedRequest.getRequestURI());
-    assertEquals("http://the.server/new-uri", wrappedRequest.getRequestURL().toString());
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(mockRequest,
+        new RequestPaths("/app/new-uri", "/new-uri", null), true);
+    assertEquals("/app/new-uri", wrappedRequest.getRequestURI());
+    assertEquals("http://the.server/app/new-uri", wrappedRequest.getRequestURL().toString());
   }
 
   public final void testWrappedRequestUrlDefaultPort() {
     final HttpServletRequest mockRequest = createMock(HttpServletRequest.class);
-    expect(mockRequest.getScheme()).andReturn("http");
-    expect(mockRequest.getServerName()).andReturn("the.server");
-    expect(mockRequest.getServerPort()).andReturn(80);
+
+    expectRequest(mockRequest, "/old-uri", "http", 80);
     replay(mockRequest);
-    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapRequest(mockRequest, "/new-uri");
-    assertEquals("/new-uri", wrappedRequest.getRequestURI());
-    assertEquals("http://the.server/new-uri", wrappedRequest.getRequestURL().toString());
+
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(mockRequest,
+        new RequestPaths("/app/new-uri", "/new-uri", null), true);
+    assertEquals("/app/new-uri", wrappedRequest.getRequestURI());
+    assertEquals("http://the.server/app/new-uri", wrappedRequest.getRequestURL().toString());
   }
 
 
   public final void testWrappedRequestUrlDefaultHttpsPort() {
     final HttpServletRequest mockRequest = createMock(HttpServletRequest.class);
-    expect(mockRequest.getScheme()).andReturn("https");
-    expect(mockRequest.getServerName()).andReturn("the.server");
-    expect(mockRequest.getServerPort()).andReturn(443);
+
+    expectRequest(mockRequest, "/old-uri", "https", 443);
     replay(mockRequest);
-    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapRequest(mockRequest, "/new-uri");
-    assertEquals("/new-uri", wrappedRequest.getRequestURI());
-    assertEquals("https://the.server/new-uri", wrappedRequest.getRequestURL().toString());
+
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(mockRequest,
+        new RequestPaths("/app/new-uri", "/new-uri", null), true);
+    assertEquals("/app/new-uri", wrappedRequest.getRequestURI());
+    assertEquals("https://the.server/app/new-uri", wrappedRequest.getRequestURL().toString());
+  }
+
+  private void expectRequest(final HttpServletRequest requestMock, String path, String scheme, int port) {
+    expect(requestMock.getContextPath()).andReturn("/app").anyTimes();
+    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(requestMock.getRequestURI()).andReturn("/app" + path).anyTimes();
+    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("http://the.server/app").append(path)).anyTimes();
+    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
+    expect(requestMock.getServletPath()).andReturn("/app" + path).anyTimes();
+    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
+    expect(requestMock.getScheme()).andReturn(scheme).anyTimes();
+    expect(requestMock.getServerName()).andReturn("the.server").anyTimes();
+    expect(requestMock.getServerPort()).andReturn(port).anyTimes();
   }
 }

@@ -16,7 +16,6 @@
 
 package com.google.inject.servlet;
 
-import static com.google.inject.servlet.ManagedServletPipeline.REQUEST_DISPATCHER_REQUEST;
 import static com.google.inject.servlet.ServletTestUtils.newFakeHttpServletRequest;
 import static com.google.inject.servlet.ServletTestUtils.newNoOpFilterChain;
 import static org.easymock.EasyMock.expect;
@@ -34,6 +33,7 @@ import org.easymock.IMocksControl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -95,15 +95,19 @@ public class FilterDispatchIntegrationTest extends TestCase {
     // create ourselves a mock request with test URI
     HttpServletRequest requestMock = control.createMock(HttpServletRequest.class);
 
-    expect(requestMock.getRequestURI())
-            .andReturn("/index.html")
-            .anyTimes();
-    expect(requestMock.getContextPath())
-        .andReturn("")
-        .anyTimes();
+    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
+    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
+    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
+    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
+    expect(requestMock.getContextPath()).andReturn("").anyTimes();
 
-    requestMock.setAttribute(REQUEST_DISPATCHER_REQUEST, true);
-    requestMock.removeAttribute(REQUEST_DISPATCHER_REQUEST);
+    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
+
 
     HttpServletResponse responseMock = control.createMock(HttpServletResponse.class);
     expect(responseMock.isCommitted())
@@ -323,10 +327,10 @@ public class FilterDispatchIntegrationTest extends TestCase {
         });
       }
     });
-    
-    HttpServletRequest request = newFakeHttpServletRequest();    
+
+    HttpServletRequest request = newFakeHttpServletRequest();
     final FilterPipeline pipeline = injector.getInstance(FilterPipeline.class);
-    pipeline.initPipeline(null);    
+    pipeline.initPipeline(null);
     pipeline.dispatch(request, null, newNoOpFilterChain());
     assertEquals(0, f1.calledAt);
     assertEquals(1, f2.calledAt);
@@ -366,9 +370,9 @@ public class FilterDispatchIntegrationTest extends TestCase {
       }
     });
 
-    HttpServletRequest request = newFakeHttpServletRequest();    
+    HttpServletRequest request = newFakeHttpServletRequest();
     FilterPipeline pipeline = injector.getInstance(FilterPipeline.class);
-    pipeline.initPipeline(null);    
+    pipeline.initPipeline(null);
     try {
       pipeline.dispatch(request, null, null);
       fail("expected exception");
@@ -392,9 +396,9 @@ public class FilterDispatchIntegrationTest extends TestCase {
       }
     });
 
-    HttpServletRequest request = newFakeHttpServletRequest();    
+    HttpServletRequest request = newFakeHttpServletRequest();
     FilterPipeline pipeline = injector.getInstance(FilterPipeline.class);
-    pipeline.initPipeline(null);    
+    pipeline.initPipeline(null);
     try {
       pipeline.dispatch(request, null, null);
       fail("expected exception");

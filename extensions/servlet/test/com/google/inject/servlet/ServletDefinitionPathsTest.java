@@ -16,7 +16,8 @@
 
 package com.google.inject.servlet;
 
-import static com.google.inject.servlet.ManagedServletPipeline.REQUEST_DISPATCHER_REQUEST;
+import static com.google.inject.servlet.ManagedServletPipeline.FORWARD_SERVLET_PATH;
+import static com.google.inject.servlet.ManagedServletPipeline.FORWARD_PATH_INFO;
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
@@ -32,6 +33,7 @@ import com.google.inject.spi.BindingScopingVisitor;
 import junit.framework.TestCase;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 
 import javax.servlet.ServletException;
@@ -74,6 +76,13 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
+    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(request.getMethod()).andReturn("GET").anyTimes();
+    expect(request.getPathInfo()).andReturn(null).anyTimes();
+    expect(request.getRequestURI()).andReturn("/app" + requestPath).anyTimes();
+    expect(request.getServletPath()).andReturn(requestPath).anyTimes();
+    expect(request.getContextPath()).andReturn("/app").anyTimes();
+
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
     expect(injector.getInstance(Key.get(HttpServlet.class)))
@@ -90,9 +99,6 @@ public class ServletDefinitionPathsTest extends TestCase {
           }
         });
 
-    expect(request.getServletPath())
-        .andReturn(requestPath);
-
     replay(injector, binding, request);
 
     ServletDefinition servletDefinition =
@@ -103,7 +109,9 @@ public class ServletDefinitionPathsTest extends TestCase {
             null);
 
     servletDefinition.init(null, injector, Sets.<HttpServlet>newIdentityHashSet());
-    servletDefinition.doService(request, response);
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(request,
+        ManagedServletPipeline.computePaths(servletDefinition, request, requestPath), false);
+    servletDefinition.doService(wrappedRequest, response);
 
     assertTrue("Servlet did not run!", run[0]);
     
@@ -157,6 +165,13 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
+    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(request.getMethod()).andReturn("GET").anyTimes();
+    expect(request.getPathInfo()).andReturn(null).anyTimes();
+    expect(request.getRequestURI()).andReturn(requestUri).anyTimes();
+    expect(request.getServletPath()).andReturn(servletPath).anyTimes();
+    expect(request.getContextPath()).andReturn(contextPath).anyTimes();
+
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
     expect(injector.getInstance(Key.get(HttpServlet.class)))
@@ -185,18 +200,6 @@ public class ServletDefinitionPathsTest extends TestCase {
           }
         });
 
-    expect(request.getRequestURI())
-        .andReturn(requestUri);
-
-    expect(request.getServletPath())
-        .andReturn(servletPath)
-        .anyTimes();
-
-    expect(request.getContextPath())
-        .andReturn(contextPath);
-
-    expect(request.getAttribute(REQUEST_DISPATCHER_REQUEST)).andReturn(null);
-
     replay(injector, binding, request);
 
     ServletDefinition servletDefinition =
@@ -207,11 +210,41 @@ public class ServletDefinitionPathsTest extends TestCase {
             null);
 
     servletDefinition.init(null, injector, Sets.<HttpServlet>newIdentityHashSet());
-    servletDefinition.doService(request, response);
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(request,
+        ManagedServletPipeline.computePaths(servletDefinition, request,
+            ServletUtils.getContextRelativePath(contextPath, requestUri)), false);
+    servletDefinition.doService(wrappedRequest, response);
 
     assertTrue("Servlet did not run!", run[0]);
 
     verify(injector, binding, request);
+  }
+
+  private void expectGetPathInfo(final String requestUri, final String contextPath, final String servletPath,
+      HttpServletRequest request, boolean firstCall, boolean withRegex) {
+
+    expect(request.getAttribute(FORWARD_PATH_INFO))
+    .andReturn(null);
+
+    if (firstCall) {
+      expectGetRequestURI(servletPath, request);
+
+      // should happen only on first call to getPathInfo
+      expect(request.getRequestURI())
+          .andReturn(requestUri);
+
+      expect(request.getContextPath())
+          .andReturn(contextPath);
+    }
+  }
+
+  private void expectGetRequestURI(final String servletPath, HttpServletRequest request) {
+
+    expect(request.getAttribute(FORWARD_SERVLET_PATH))
+    .andReturn(null);
+
+    expect(request.getServletPath())
+    .andReturn(servletPath);
   }
 
   // Data-driven test.
@@ -268,6 +301,14 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
+    expect(request.getAttributeNames())
+        .andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
+    expect(request.getMethod()).andReturn("GET").anyTimes();
+    expect(request.getPathInfo()).andReturn(null).anyTimes();
+    expect(request.getRequestURI()).andReturn(requestUri).anyTimes();
+    expect(request.getServletPath()).andReturn(servletPath).anyTimes();
+    expect(request.getContextPath()).andReturn(contextPath).anyTimes();
+
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
     expect(injector.getInstance(Key.get(HttpServlet.class)))
@@ -296,18 +337,6 @@ public class ServletDefinitionPathsTest extends TestCase {
           }
         });
 
-    expect(request.getRequestURI())
-        .andReturn(requestUri);
-
-    expect(request.getServletPath())
-        .andReturn(servletPath)
-        .anyTimes();
-
-    expect(request.getContextPath())
-        .andReturn(contextPath);
-
-    expect(request.getAttribute(REQUEST_DISPATCHER_REQUEST)).andReturn(null);
-
     replay(injector, binding, request);
 
     ServletDefinition servletDefinition =
@@ -318,7 +347,10 @@ public class ServletDefinitionPathsTest extends TestCase {
             null);
 
     servletDefinition.init(null, injector, Sets.<HttpServlet>newIdentityHashSet());
-    servletDefinition.doService(request, response);
+    HttpServletRequest wrappedRequest = ManagedServletPipeline.wrapForwardRequest(request,
+        ManagedServletPipeline.computePaths(servletDefinition, request,
+            ServletUtils.getContextRelativePath(contextPath, requestUri)), false);
+    servletDefinition.doService(wrappedRequest, response);
 
     assertTrue("Servlet did not run!", run[0]);
     
