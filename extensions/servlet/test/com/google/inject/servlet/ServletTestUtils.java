@@ -2,22 +2,33 @@
 
 package com.google.inject.servlet;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+
+import org.easymock.IAnswer;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+
+import static org.easymock.EasyMock.anyObject;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.getCurrentArguments;
+import static org.easymock.EasyMock.replay;
 
 /**
  * Utilities for servlet tests.
@@ -30,7 +41,7 @@ public class ServletTestUtils {
 
   private static class ThrowingInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-      throw new UnsupportedOperationException("No methods are supported on this object");
+      throw new AssertionError("Unexpected call to " + method.toString());
     }
   }
   
@@ -47,43 +58,55 @@ public class ServletTestUtils {
   /**
    * Returns a fake, HttpServletRequest which stores attributes in a HashMap.
    */
+  @SuppressWarnings("rawtypes")
   public static HttpServletRequest newFakeHttpServletRequest() {
-    HttpServletRequest delegate = (HttpServletRequest) Proxy.newProxyInstance(
-        HttpServletRequest.class.getClassLoader(),
-        new Class[] { HttpServletRequest.class }, new ThrowingInvocationHandler());
-    
-    return new HttpServletRequestWrapper(delegate) {
-      final Map<String, Object> attributes = Maps.newHashMap(); 
-      final HttpSession session = newFakeHttpSession();
 
-      @Override public String getMethod() {
-        return "GET";
-      }
+    HttpServletRequest delegate = createMock(HttpServletRequest.class);
 
-      @Override public Object getAttribute(String name) {
-        return attributes.get(name);
+    final HashMap<String, Object> attrs = Maps.newHashMap();
+    final HttpSession session = newFakeHttpSession();
+
+    expect(delegate.getMethod()).andReturn("GET").anyTimes();
+    expect(delegate.getPathInfo()).andReturn(null).anyTimes();
+    expect(delegate.getRequestURI()).andReturn("/").anyTimes();
+    expect(delegate.getServletPath()).andReturn("").anyTimes();
+    expect(delegate.getContextPath()).andReturn("").anyTimes();
+    expect(delegate.getQueryString()).andReturn("").anyTimes();
+    expect(delegate.getSession()).andReturn(session).anyTimes();
+    expect(delegate.getParameterMap()).andReturn(ImmutableMap.of()).anyTimes();
+
+    expect(delegate.getAttributeNames()).andAnswer(new IAnswer<Enumeration>() {
+      @Override
+      public Enumeration answer() throws Throwable {
+        return Collections.enumeration(attrs.keySet());
       }
-      
-      @Override public void setAttribute(String name, Object value) {
-        attributes.put(name, value);
+    }).anyTimes();
+    expect(delegate.getAttribute(anyObject(String.class))).andAnswer(new IAnswer<Object>() {
+      @Override
+      public Object answer() throws Throwable {
+        return attrs.get(getCurrentArguments()[0]);
       }
-      
-      @Override public Map getParameterMap() {
-        return ImmutableMap.of();
+    }).anyTimes();
+    delegate.setAttribute(anyObject(String.class), anyObject());
+    expectLastCall().andAnswer(new IAnswer<Void>() {
+      @Override
+      public Void answer() throws Throwable {
+        attrs.put((String)getCurrentArguments()[0], getCurrentArguments()[1]);
+        return null;
       }
-      
-      @Override public String getRequestURI() {
-        return "/";
+    }).anyTimes();
+    delegate.removeAttribute(anyObject(String.class));
+    expectLastCall().andAnswer(new IAnswer<Void>() {
+      @Override
+      public Void answer() throws Throwable {
+        attrs.remove((String)getCurrentArguments()[0]);
+        return null;
       }
-      
-      @Override public String getContextPath() {
-        return "";
-      }
-      
-      @Override public HttpSession getSession() {
-        return session;
-      }
-    };
+    }).anyTimes();
+    replay(delegate);
+
+    return delegate;
+
   }
   
   /**
