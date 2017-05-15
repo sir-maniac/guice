@@ -79,6 +79,19 @@ class ManagedServletPipeline {
   public static final String INCLUDE_SERVLET_PATH = "javax.servlet.include.servlet_path";
   public static final String INCLUDE_QUERY_STRING = "javax.servlet.include.query_string";
 
+  public static final Set<String> SPECIAL_ATTRIBUTES = ImmutableSet.of(
+      FORWARD_REQUEST_URI,
+      FORWARD_CONTEXT_PATH,
+      FORWARD_PATH_INFO,
+      FORWARD_QUERY_STRING,
+      FORWARD_SERVLET_PATH,
+      INCLUDE_REQUEST_URI,
+      INCLUDE_CONTEXT_PATH,
+      INCLUDE_PATH_INFO,
+      INCLUDE_QUERY_STRING,
+      INCLUDE_SERVLET_PATH);
+
+
   private final ServletDefinition[] servletDefinitions;
   private static final TypeLiteral<ServletDefinition> SERVLET_DEFS =
       TypeLiteral.get(ServletDefinition.class);
@@ -588,17 +601,6 @@ class ManagedServletPipeline {
 
   private static class RequestDispatcherRequestWrapper extends HttpServletRequestWrapper {
 
-    private static final Set<String> SPECIAL_ATTRIBUTES = ImmutableSet.of(
-                FORWARD_REQUEST_URI,
-                FORWARD_CONTEXT_PATH,
-                FORWARD_PATH_INFO,
-                FORWARD_QUERY_STRING,
-                FORWARD_SERVLET_PATH,
-                INCLUDE_REQUEST_URI,
-                INCLUDE_CONTEXT_PATH,
-                INCLUDE_PATH_INFO,
-                INCLUDE_QUERY_STRING,
-                INCLUDE_SERVLET_PATH);
 
     private final Map<String, Object> origSpecials = new HashMap<String, Object>();
     private final Map<String, Object> specialAttributes = new HashMap<String, Object>();

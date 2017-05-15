@@ -324,12 +324,11 @@ public class ServletPipelineRequestDispatcherTest extends TestCase {
   }
 
   private void expectRequest(final HttpServletRequest requestMock, String path, String scheme, int port) {
-    expect(requestMock.getContextPath()).andReturn("/app").anyTimes();
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/app" + path).anyTimes();
+
+    ServletTestUtils.expectRequest(requestMock, "/app" + path, "", null, "/app");
+
     expect(requestMock.getRequestURL()).andReturn(new StringBuffer("http://the.server/app").append(path)).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/app" + path).anyTimes();
+
     expect(requestMock.getQueryString()).andReturn(null).anyTimes();
     expect(requestMock.getScheme()).andReturn(scheme).anyTimes();
     expect(requestMock.getServerName()).andReturn("the.server").anyTimes();

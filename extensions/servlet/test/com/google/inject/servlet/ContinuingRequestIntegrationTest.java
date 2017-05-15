@@ -126,17 +126,7 @@ public class ContinuingRequestIntegrationTest extends TestCase {
 
     HttpServletRequest request = createMock(HttpServletRequest.class);
 
-    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(request.getMethod()).andReturn("GET").anyTimes();
-    expect(request.getPathInfo()).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn("/").anyTimes();
-    expect(request.getServletPath()).andReturn("").anyTimes();
-    expect(request.getContextPath()).andReturn("").anyTimes();
-
-    request.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    request.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    ServletTestUtils.expectRequest(request, "/", "", null, "");
 
     expect(request.getCookies()).andReturn(new Cookie[0]);
 
@@ -176,19 +166,9 @@ public class ContinuingRequestIntegrationTest extends TestCase {
 
     HttpServletRequest request = createMock(HttpServletRequest.class);
 
-    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(request.getMethod()).andReturn("GET").anyTimes();
-    expect(request.getPathInfo()).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn("/").anyTimes();
-    expect(request.getServletPath()).andReturn("").anyTimes();
-    expect(request.getContextPath()).andReturn("").anyTimes();
-
-    request.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    request.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
-
+    ServletTestUtils.expectRequest(request, "/", "", null, "");
     expect(request.getCookies()).andReturn(new Cookie[0]);
+
     FilterChain filterChain = createMock(FilterChain.class);
 
     replay(request, filterConfig, filterChain);

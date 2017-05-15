@@ -76,12 +76,7 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
-    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(request.getMethod()).andReturn("GET").anyTimes();
-    expect(request.getPathInfo()).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn("/app" + requestPath).anyTimes();
-    expect(request.getServletPath()).andReturn(requestPath).anyTimes();
-    expect(request.getContextPath()).andReturn("/app").anyTimes();
+    ServletTestUtils.expectRequest(request, "/app" + requestPath, requestPath, null, "/app");
 
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
@@ -165,12 +160,7 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
-    expect(request.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(request.getMethod()).andReturn("GET").anyTimes();
-    expect(request.getPathInfo()).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn(requestUri).anyTimes();
-    expect(request.getServletPath()).andReturn(servletPath).anyTimes();
-    expect(request.getContextPath()).andReturn(contextPath).anyTimes();
+    ServletTestUtils.expectRequest(request, requestUri, servletPath, null, contextPath);
 
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
@@ -301,13 +291,7 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
-    expect(request.getAttributeNames())
-        .andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(request.getMethod()).andReturn("GET").anyTimes();
-    expect(request.getPathInfo()).andReturn(null).anyTimes();
-    expect(request.getRequestURI()).andReturn(requestUri).anyTimes();
-    expect(request.getServletPath()).andReturn(servletPath).anyTimes();
-    expect(request.getContextPath()).andReturn(contextPath).anyTimes();
+    ServletTestUtils.expectRequest(request, requestUri, servletPath, null, contextPath);
 
     final boolean[] run = new boolean[1];
     //get an instance of this servlet

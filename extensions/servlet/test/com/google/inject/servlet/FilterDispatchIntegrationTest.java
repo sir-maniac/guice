@@ -95,18 +95,10 @@ public class FilterDispatchIntegrationTest extends TestCase {
     // create ourselves a mock request with test URI
     HttpServletRequest requestMock = control.createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html", "/index.html", null, "");
 
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
+    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
 
 
     HttpServletResponse responseMock = control.createMock(HttpServletResponse.class);

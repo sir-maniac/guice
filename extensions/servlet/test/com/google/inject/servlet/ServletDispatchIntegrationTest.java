@@ -86,19 +86,10 @@ public class ServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
+    ServletTestUtils.expectRequest(requestMock, "/index.html", "/index.html", null, "");
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
     expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
     expect(requestMock.getQueryString()).andReturn(null).anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
-
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
 
     //dispatch request
     replay(requestMock);
@@ -140,19 +131,10 @@ public class ServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html", "/index.html", null, "");
+
     expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
     expect(requestMock.getQueryString()).andReturn(null).anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
-
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
-
 
     //dispatch request
     replay(requestMock);
@@ -259,20 +241,10 @@ public class ServletDispatchIntegrationTest extends TestCase {
     final HttpServletRequest requestMock = createMock(HttpServletRequest.class);
     HttpServletResponse responseMock = createMock(HttpServletResponse.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/").anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/").anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/", "/", null, "");
+
     expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/")).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
     expect(requestMock.getQueryString()).andReturn(null).anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
-
-    expect(requestMock.getAttribute(ManagedServletPipeline.GUICE_MANAGED)).andReturn(Boolean.TRUE).anyTimes();
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
-
 
     expect(responseMock.isCommitted()).andReturn(false);
     responseMock.resetBuffer();
@@ -305,19 +277,10 @@ public class ServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html?query=params").anyTimes();
-    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html?query=params", "/index.html", null, "");
 
-    expect(requestMock.getAttribute(ManagedServletPipeline.GUICE_MANAGED)).andReturn(Boolean.TRUE).anyTimes();
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
+    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
 
     //dispatch request
     replay(requestMock);
@@ -350,18 +313,10 @@ public class ServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html?query=params").anyTimes();
-    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html?query=params", "/index.html", null, "");
 
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    expect(requestMock.getRequestURL()).andReturn(new StringBuffer("/index.html")).anyTimes();
+    expect(requestMock.getQueryString()).andReturn(null).anyTimes();
 
     //dispatch request
     replay(requestMock);

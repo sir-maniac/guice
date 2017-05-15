@@ -23,6 +23,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
+import com.google.inject.servlet.ServletScopesTest.AnnotatedRequestScopedClass;
 
 import junit.framework.TestCase;
 
@@ -43,13 +44,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static com.google.inject.servlet.ManagedServletPipeline.SPECIAL_ATTRIBUTES;
+
 /** Tests to make sure that servlets with a context path are handled right. */
 public class ContextPathTest extends TestCase {
 
   @Inject @Named("foo")
   private TestServlet fooServlet;
 
-  @Inject @Named("bar") 
+  @Inject @Named("bar")
   private TestServlet barServlet;
 
   private IMocksControl globalControl;
@@ -117,17 +120,7 @@ public class ContextPathTest extends TestCase {
     HttpServletRequest req = testControl.createMock(HttpServletRequest.class);
     HttpServletResponse res = testControl.createMock(HttpServletResponse.class);
 
-    req.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    req.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
-
-    expect(req.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(req.getMethod()).andReturn("GET").anyTimes();
-    expect(req.getPathInfo()).andReturn(null).anyTimes();
-    expect(req.getRequestURI()).andReturn("/bar/foo").anyTimes();
-    expect(req.getServletPath()).andReturn("/bar/foo").anyTimes();
-    expect(req.getContextPath()).andReturn("").anyTimes();
+    ServletTestUtils.expectRequest(req, "/bar/foo", "/bar/foo", null, "");
 
     testControl.replay();
 
@@ -248,17 +241,7 @@ public class ContextPathTest extends TestCase {
     HttpServletRequest req = testControl.createMock(HttpServletRequest.class);
     HttpServletResponse res = testControl.createMock(HttpServletResponse.class);
 
-    req.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    req.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
-
-    expect(req.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(req.getMethod()).andReturn("GET").anyTimes();
-    expect(req.getPathInfo()).andReturn(pathInfo).anyTimes();
-    expect(req.getRequestURI()).andReturn(requestURI).anyTimes();
-    expect(req.getServletPath()).andReturn(servletPath).anyTimes();
-    expect(req.getContextPath()).andReturn(contextPath).anyTimes();
+    ServletTestUtils.expectRequest(req, requestURI, servletPath, pathInfo, contextPath);
 
     testControl.replay();
 

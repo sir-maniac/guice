@@ -22,6 +22,7 @@ import org.easymock.IAnswer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Booleans;
 
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
@@ -141,6 +142,25 @@ public class ServletTestUtils {
   public static HttpSession newFakeHttpSession() {
     return (HttpSession) Proxy.newProxyInstance(HttpSession.class.getClassLoader(),
         new Class[] { HttpSession.class }, new FakeHttpSessionHandler());
+  }
+
+  static void expectRequest(HttpServletRequest req, final String requestURI, final String servletPath,
+      String pathInfo, final String contextPath) {
+    req.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
+    expectLastCall().anyTimes();
+    req.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
+    expectLastCall().anyTimes();
+    expect(req.getAttribute(ManagedServletPipeline.GUICE_MANAGED)).andReturn(Boolean.TRUE).anyTimes();
+
+    for (String attr : ManagedServletPipeline.SPECIAL_ATTRIBUTES) {
+      expect(req.getAttribute(attr)).andReturn(null).anyTimes();
+    }
+
+    expect(req.getMethod()).andReturn("GET").anyTimes();
+    expect(req.getPathInfo()).andReturn(pathInfo).anyTimes();
+    expect(req.getRequestURI()).andReturn(requestURI).anyTimes();
+    expect(req.getServletPath()).andReturn(servletPath).anyTimes();
+    expect(req.getContextPath()).andReturn(contextPath).anyTimes();
   }
 
 }

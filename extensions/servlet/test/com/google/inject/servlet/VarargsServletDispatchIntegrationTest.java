@@ -81,17 +81,7 @@ public class VarargsServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getMethod()).andReturn("GET").anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
-
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html", "/index.html", null, "");
 
     //dispatch request
     replay(requestMock);
@@ -126,17 +116,7 @@ public class VarargsServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getMethod()).andReturn("GET").anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
-
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html", "/index.html", null, "");
 
     //dispatch request
     replay(requestMock);
@@ -174,17 +154,7 @@ public class VarargsServletDispatchIntegrationTest extends TestCase {
     //create ourselves a mock request with test URI
     HttpServletRequest requestMock = createMock(HttpServletRequest.class);
 
-    expect(requestMock.getAttributeNames()).andReturn(Collections.enumeration(Collections.emptySet())).anyTimes();
-    expect(requestMock.getMethod()).andReturn("GET").anyTimes();
-    expect(requestMock.getPathInfo()).andReturn(null).anyTimes();
-    expect(requestMock.getRequestURI()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getServletPath()).andReturn("/index.html").anyTimes();
-    expect(requestMock.getContextPath()).andReturn("").anyTimes();
-
-    requestMock.setAttribute(ManagedServletPipeline.GUICE_MANAGED, Boolean.TRUE);
-    expectLastCall().anyTimes();
-    requestMock.removeAttribute(ManagedServletPipeline.GUICE_MANAGED);
-    expectLastCall().anyTimes();
+    ServletTestUtils.expectRequest(requestMock, "/index.html", "/index.html", null, "");
 
     //dispatch request
     replay(requestMock);
