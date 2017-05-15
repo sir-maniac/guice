@@ -39,6 +39,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
 
+import static com.google.inject.servlet.ManagedServletPipeline.GUICE_MANAGED;
+
 /**
  * Central routing/dispatch class handles lifecycle of managed filters, and delegates to the servlet
  * pipeline.
@@ -73,7 +75,7 @@ class ManagedFilterPipeline implements FilterPipeline{
   /**
    * Introspects the injector and collects all instances of bound {@code List<FilterDefinition>}
    * into a master list.
-   * 
+   *
    * We have a guarantee that {@link com.google.inject.Injector#getBindings()} returns a map
    * that preserves insertion order in entry-set iterators.
    */
@@ -82,7 +84,7 @@ class ManagedFilterPipeline implements FilterPipeline{
     for (Binding<FilterDefinition> entry : injector.findBindingsByType(FILTER_DEFS)) {
       filterDefinitions.add(entry.getProvider().get());
     }
-    
+
     // Copy to a fixed-size array for speed of iteration.
     return filterDefinitions.toArray(new FilterDefinition[filterDefinitions.size()]);
   }
@@ -155,7 +157,7 @@ class ManagedFilterPipeline implements FilterPipeline{
       public RequestDispatcher getRequestDispatcher(String path) {
         final RequestDispatcher dispatcher = servletPipeline.getRequestDispatcher(path);
 
-        return (null != dispatcher) ? dispatcher : super.getRequestDispatcher(path);
+        return (null != dispatcher) ? dispatcher : wrapUnmanagedDispatcher(super.getRequestDispatcher(path));
       }
     };
   }
@@ -223,7 +225,43 @@ class ManagedFilterPipeline implements FilterPipeline{
       public RequestDispatcher getRequestDispatcher(String path) {
         final RequestDispatcher dispatcher = servletPipeline.getRequestDispatcher(path);
 
-        return (null != dispatcher) ? dispatcher : super.getRequestDispatcher(path);
+        return (null != dispatcher) ? dispatcher : wrapUnmanagedDispatcher(super.getRequestDispatcher(path));
+      }
+    };
+  }
+
+  /**
+   * wrap the conainer's dispatcher to ensure the GUICE_MANAGED
+   *  request attribute is unset during it's forward/include
+   */
+  private RequestDispatcher wrapUnmanagedDispatcher(final RequestDispatcher containerDispatcher) {
+    if (containerDispatcher == null) {
+      return null;
+    }
+
+    /**
+     * Ensure non managed servlets don't have the GUICE_MANAGED attribute
+     */
+    return new RequestDispatcher() {
+      @Override
+      public void include(ServletRequest request, ServletResponse response)
+          throws ServletException, IOException {
+        request.removeAttribute(GUICE_MANAGED);
+        try {
+          containerDispatcher.include(request, response);
+        } finally {
+          request.setAttribute(GUICE_MANAGED, Boolean.TRUE);
+        }
+      }
+
+      @Override
+      public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException {
+        request.removeAttribute(GUICE_MANAGED);
+        try {
+          containerDispatcher.forward(request, response);
+        } finally {
+          request.setAttribute(GUICE_MANAGED, Boolean.TRUE);
+        }
       }
     };
   }
