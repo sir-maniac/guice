@@ -109,7 +109,7 @@ public class ServletDefinitionPathsTest extends TestCase {
     servletDefinition.doService(wrappedRequest, response);
 
     assertTrue("Servlet did not run!", run[0]);
-    
+
     verify(injector, binding, request);
 
   }
@@ -160,7 +160,8 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
-    ServletTestUtils.expectRequest(request, requestUri, servletPath, null, contextPath);
+    ServletTestUtils.expectRequest(request, requestUri,
+        ServletUtils.getContextRelativePath(contextPath, requestUri), null, contextPath);
 
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
@@ -240,18 +241,43 @@ public class ServletDefinitionPathsTest extends TestCase {
   // Data-driven test.
   public final void testPathInfoWithRegexMatching() throws IOException, ServletException {
     // first a mapping of /*
-    pathInfoWithRegexMatching("/path/index.html", "/path", "/(.)*", "/index.html", "");
-    pathInfoWithRegexMatching("/path//hulaboo///index.html", "/path", "/(.)*",
+
+    /*
+     * NOTE(sir-maniac):
+     *
+     * Originally, the patterns tried to do a repeated group of captures (e.g. "/(.)*")
+     * this breaks URIPatternType#extractPath, which attempts to return the string before
+     * the first captured group ("/index.html" with the pattern "/(.)*" returns "l" as the
+     * capture, so the prefix returned is "/index.htm" instead of "/".
+     *
+     * This is the behavior of regex in both Oracle JVM 6 and 8, and seems to be standard
+     *  (http://www.regular-expressions.info/captureall.html)
+     *
+     * Apparently, grouping the repeats with "/((.)*)" or "/(.*)", seems to be proper for regex,
+     *   but I may not understand the design considerations.
+     *
+     */
+
+    pathInfoWithRegexMatching("/path/index.html", "/path", "/(.*)", "/index.html", "");
+    pathInfoWithRegexMatching("/path//hulaboo///index.html", "/path", "/(.*)",
         "/hulaboo/index.html", "");
-    pathInfoWithRegexMatching("/path/", "/path", "/(.)*", "/", "");
-    pathInfoWithRegexMatching("/path////////", "/path", "/(.)*", "/", "");
+    pathInfoWithRegexMatching("/path/", "/path", "/(.*)", "/", "");
+    pathInfoWithRegexMatching("/path////////", "/path", "/(.*)", "/", "");
+
+    // a complex pattern with more than one capture group
+    pathInfoWithRegexMatching("/path/thing/foo/baz////////", "/path", "/thing/(foo|bar)/baz/(.*)", "/", "/thing");
+    pathInfoWithRegexMatching("/path/thing/foo/baz", "/path", "/thing/(foo|bar)/baz/(.*)", null, "/thing/foo/baz");
+    pathInfoWithRegexMatching("/path/thing/bar/baz", "/path", "/thing/(foo|bar)/baz/(.*)", null, "/thing/bar/baz");
+    pathInfoWithRegexMatching("/path/thing/foo/baz/", "/path", "/thing/(foo|bar)/baz/(.*)", "/", "/thing/foo/baz");
+    pathInfoWithRegexMatching("/path/thing/foo/baz/stuff.html", "/path", "/thing/(foo|bar)/baz/(.*)", "/stuff.html", "/thing/foo/baz");
+
 
     // a servlet mapping of /thing/*
-    pathInfoWithRegexMatching("/path/thing////////", "/path", "/thing/(.)*", "/", "/thing");
-    pathInfoWithRegexMatching("/path/thing/stuff", "/path", "/thing/(.)*", "/stuff", "/thing");
-    pathInfoWithRegexMatching("/path/thing/stuff.html", "/path", "/thing/(.)*", "/stuff.html",
+    pathInfoWithRegexMatching("/path/thing////////", "/path", "/thing/(.*)", "/", "/thing");
+    pathInfoWithRegexMatching("/path/thing/stuff", "/path", "/thing/(.*)", "/stuff", "/thing");
+    pathInfoWithRegexMatching("/path/thing/stuff.html", "/path", "/thing/(.*)", "/stuff.html",
         "/thing");
-    pathInfoWithRegexMatching("/path/thing", "/path", "/thing/(.)*", null, "/thing");
+    pathInfoWithRegexMatching("/path/thing", "/path", "/thing/(.*)", null, "/thing");
 
     // *.xx style mapping
     pathInfoWithRegexMatching("/path/thing.thing", "/path", ".*\\.thing", null, "/thing.thing");
@@ -262,18 +288,18 @@ public class ServletDefinitionPathsTest extends TestCase {
 
     // path
     pathInfoWithRegexMatching("/path/test.com/com.test.MyServletModule", "", "/path/[^/]+/(.*)",
-        "com.test.MyServletModule", "/path/test.com/com.test.MyServletModule");
+        "/com.test.MyServletModule", "/path/test.com/com.test.MyServletModule");
 
     // Encoded URLs
-    pathInfoWithRegexMatching("/path/index%2B.html", "/path", "/(.)*", "/index+.html", "");
-    pathInfoWithRegexMatching("/path/a%20file%20with%20spaces%20in%20name.html", "/path", "/(.)*", "/a file with spaces in name.html", "");
-    pathInfoWithRegexMatching("/path/Tam%C3%A1s%20nem%20m%C3%A1s.html", "/path", "/(.)*", "/Tamás nem más.html", "");
-    
+    pathInfoWithRegexMatching("/path/index%2B.html", "/path", "/(.*)", "/index+.html", "");
+    pathInfoWithRegexMatching("/path/a%20file%20with%20spaces%20in%20name.html", "/path", "/(.*)", "/a file with spaces in name.html", "");
+    pathInfoWithRegexMatching("/path/Tam%C3%A1s%20nem%20m%C3%A1s.html", "/path", "/(.*)", "/Tamás nem más.html", "");
+
     // jsessionid paths
-    pathInfoWithRegexMatching("/path/thing/stuff;jsessionid=12345678910", "/path", "/thing/(.)*", "/stuff", "/thing");
-    pathInfoWithRegexMatching("/path/thing/stuff.html;jsessionid=12345678910", "/path", "/thing/(.)*", "/stuff.html",
+    pathInfoWithRegexMatching("/path/thing/stuff;jsessionid=12345678910", "/path", "/thing/(.*)", "/stuff", "/thing");
+    pathInfoWithRegexMatching("/path/thing/stuff.html;jsessionid=12345678910", "/path", "/thing/(.*)", "/stuff.html",
         "/thing");
-    pathInfoWithRegexMatching("/path/thing;jsessionid=12345678910", "/path", "/thing/(.)*", null, "/thing");
+    pathInfoWithRegexMatching("/path/thing;jsessionid=12345678910", "/path", "/thing/(.*)", null, "/thing");
     pathInfoWithRegexMatching("/path/my/h.thing;jsessionid=12345678910", "/path", ".*\\.thing", null, "/my/h.thing");
   }
 
@@ -291,7 +317,8 @@ public class ServletDefinitionPathsTest extends TestCase {
     expect(injector.getBinding(Key.get(HttpServlet.class)))
         .andReturn(binding);
 
-    ServletTestUtils.expectRequest(request, requestUri, servletPath, null, contextPath);
+    ServletTestUtils.expectRequest(request, requestUri,
+        ServletUtils.getContextRelativePath(contextPath, requestUri), null, contextPath);
 
     final boolean[] run = new boolean[1];
     //get an instance of this servlet
@@ -337,7 +364,7 @@ public class ServletDefinitionPathsTest extends TestCase {
     servletDefinition.doService(wrappedRequest, response);
 
     assertTrue("Servlet did not run!", run[0]);
-    
+
     verify(injector, binding, request);
   }
 }

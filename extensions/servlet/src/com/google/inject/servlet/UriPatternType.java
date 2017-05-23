@@ -21,7 +21,7 @@ import java.util.regex.PatternSyntaxException;
 
 /**
  * An enumeration of the available URI-pattern matching styles
- * 
+ *
  * @since 3.0
  */
 public enum UriPatternType {
@@ -120,7 +120,7 @@ public enum UriPatternType {
       //else treat as literal
       return path;
     }
-    
+
     public UriPatternType getPatternType() {
       return UriPatternType.SERVLET;
     }
@@ -156,19 +156,35 @@ public enum UriPatternType {
     public String extractPath(String path) {
       Matcher matcher = pattern.matcher(path);
       if (matcher.matches() && matcher.groupCount() >= 1) {
+        for (int i=1; i <= matcher.groupCount(); i++) {
 
-        // Try to capture the everything before the regex begins to match
-        // the path. This is a rough approximation to try and get parity
-        // with the servlet style mapping where the path is a capture of
-        // the URI before the wildcard.
-        int end = matcher.start(1);
-        if (end < path.length()) {
-          return path.substring(0, end);
+          // Try to capture everything before an ending capture group.
+          // This is a rough approximation to try and get parity with the
+          // servlet style mapping where the path is a capture of
+          // the URI before the wildcard.
+          if (matcher.end(i) == path.length()) {
+            int end = matcher.start(i);
+            if (end < path.length()) {
+              String extract = path.substring(0, end);
+
+              //trim the trailing '/'
+              if (extract.endsWith("/")) {
+                extract = extract.substring(0, extract.length() - 1);
+              }
+
+              return extract;
+            } else {
+              if (path.endsWith("/")) {
+                // pathInfo will contain the trailing "/"
+                return path.substring(0, path.length() - 1);
+              }
+            }
+          }
         }
       }
       return null;
     }
-    
+
     public UriPatternType getPatternType() {
       return UriPatternType.REGEX;
     }
